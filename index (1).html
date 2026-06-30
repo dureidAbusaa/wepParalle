@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chapter 7 · Parallel Processing</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root,[data-theme="dark"]{--bg:#0b0e14;--surf:#141a26;--surf2:#1b2231;--ink:#e8ecf4;--ink2:#aab3c5;--ink3:#727d92;--line:#252d3d;--vio:#7c6cff;--cyan:#22c7e0;--ok:#1aa75a;--bad:#e8456b;--warn:#e8a33d;--grad:linear-gradient(135deg,#7c6cff,#22c7e0);--sh:0 8px 28px rgba(0,0,0,.4)}
+[data-theme="light"]{--bg:#eef1f7;--surf:#ffffff;--surf2:#f4f6fb;--ink:#161a23;--ink2:#3f4a5e;--ink3:#7a8398;--line:#e0e5ee;--sh:0 8px 28px rgba(80,90,120,.14)}
+html,body{height:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Arabic",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.75;-webkit-font-smoothing:antialiased}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+#root:not(:empty)~#boot{display:none!important}
+#boot{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:50;text-align:center}
+#boot .bm{font-family:ui-monospace,monospace;font-weight:800;font-size:26px;letter-spacing:.18em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;animation:pulse 1.4s ease-in-out infinite}
+#boot .bs{color:var(--ink3);font-size:13px;margin-top:12px}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+#errpanel{position:fixed;inset:0;z-index:60;display:none;overflow:auto;padding:24px;background:var(--bg)}
+.errc{max-width:720px;margin:40px auto;background:var(--surf);border:1px solid var(--bad);border-radius:16px;padding:24px;box-shadow:var(--sh)}
+.errc h3{color:var(--bad);margin-bottom:8px}.errc p{color:var(--ink2);font-size:14px}
+.errc pre{direction:ltr;text-align:left;background:var(--surf2);border:1px solid var(--line);border-radius:10px;padding:14px;font-family:ui-monospace,monospace;font-size:12px;overflow:auto;max-height:300px;white-space:pre-wrap;word-break:break-word;margin:14px 0}
+.btn{background:var(--grad);color:#fff;border:none;border-radius:10px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer}
+.btn:hover{opacity:.92}.btn--sm{padding:6px 12px;font-size:13px}
+.term{font-family:ui-monospace,monospace;font-size:.86em;background:rgba(124,108,255,.14);color:var(--vio);border:1px solid rgba(124,108,255,.3);border-radius:6px;padding:1px 7px;direction:ltr;display:inline-block;font-weight:600}
+.term--c{background:rgba(34,199,224,.13);color:var(--cyan);border-color:rgba(34,199,224,.3)}
+.app{display:flex;min-height:100vh}
+.side{width:268px;flex-shrink:0;background:var(--surf);border-inline-start:1px solid var(--line);padding:20px 16px;display:flex;flex-direction:column;gap:18px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:42px;height:42px;border-radius:11px;background:var(--grad);display:grid;place-items:center;font-family:ui-monospace,monospace;font-weight:800;color:#fff;font-size:17px}
+.brand b{font-family:ui-monospace,monospace;font-size:15px;display:block}.brand span{font-size:11px;color:var(--ink3)}
+.prog{height:9px;background:var(--surf2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.prog>i{display:block;height:100%;background:var(--grad);width:0;transition:width .5s;border-radius:99px}
+.proghead{display:flex;justify-content:space-between;font-size:12px;color:var(--ink2);margin-bottom:6px}
+.progpct{text-align:end;font-size:11px;color:var(--ink3);margin-top:5px;font-family:ui-monospace,monospace}
+.nav{display:flex;flex-direction:column;gap:4px}
+.navi{display:flex;align-items:center;gap:10px;width:100%;text-align:start;background:none;border:none;color:var(--ink2);font:inherit;padding:9px 11px;border-radius:10px;cursor:pointer;transition:.15s}
+.navi:hover{background:var(--surf2);color:var(--ink)}
+.navi.act{background:rgba(124,108,255,.13);color:var(--ink);font-weight:600}
+.navi .ic{font-size:15px;width:20px;text-align:center}.navi .lb{flex:1;font-size:13.5px}
+.navi .dot{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line);font-size:11px;display:grid;place-items:center}
+.navi.done .dot{background:var(--ok);border-color:var(--ok);color:#fff}
+.sfoot{margin-top:auto;font-size:11px;color:var(--ink3);border-top:1px solid var(--line);padding-top:12px}
+.wrap{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:13px 22px;background:var(--bg);border-bottom:1px solid var(--line)}
+.burger{display:none;background:var(--surf2);border:1px solid var(--line);color:var(--ink);font-size:18px;border-radius:9px;width:38px;height:38px;cursor:pointer}
+.top h1{font-family:ui-monospace,monospace;font-size:16px;font-weight:700;direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crumb{font-size:12px;color:var(--ink3)}
+.top .right{margin-inline-start:auto;display:flex;align-items:center;gap:12px}
+.minip{width:90px}
+.theme{background:var(--surf2);border:1px solid var(--line);font-size:16px;width:38px;height:38px;border-radius:9px;cursor:pointer}
+.main{padding:26px 22px 60px;max-width:960px;width:100%;margin:0 auto}
+.banner{background:linear-gradient(135deg,rgba(124,108,255,.16),rgba(34,199,224,.12));border:1px solid rgba(124,108,255,.3);border-radius:12px;padding:13px 18px;margin-bottom:18px;font-size:14px}
+.banner button{background:none;border:none;color:var(--vio);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+.shd{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.shd .no{width:46px;height:46px;border-radius:13px;background:var(--grad);color:#fff;display:grid;place-items:center;font-family:ui-monospace,monospace;font-weight:800;flex-shrink:0}
+.shd .no.c{background:linear-gradient(135deg,#22c7e0,#1aa75a)}
+.shd h2{font-size:21px;letter-spacing:-.01em}.shd .sub{font-size:12.5px;color:var(--ink3);direction:ltr;text-align:start}
+.lead{font-size:15.5px;color:var(--ink2);margin-bottom:18px}
+.card{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:var(--sh)}
+.soft{background:var(--surf2);border:1px solid var(--line);border-radius:12px;padding:15px;margin-bottom:14px}
+.soft h4{font-size:14px;margin-bottom:6px;color:var(--vio)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px}
+.trio{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px}
+.trio .c{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:15px}
+.trio h4{font-size:15px;margin-bottom:6px}.trio p{font-size:13.5px;color:var(--ink2)}
+.memo{display:flex;gap:0;flex-direction:column;background:rgba(232,163,61,.08);border:1px solid rgba(232,163,61,.32);border-inline-start:4px solid var(--warn);border-radius:10px;padding:13px 15px;margin-bottom:14px}
+.memo b{display:inline-block;font-size:11px;font-weight:800;color:var(--warn);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.memo p{font-size:14px;color:var(--ink)}
+.disc{border:1px solid var(--line);border-radius:11px;margin-bottom:8px;overflow:hidden;background:var(--surf)}
+.disc>button{display:flex;align-items:center;gap:10px;width:100%;text-align:start;background:none;border:none;color:var(--ink);font:inherit;font-weight:600;font-size:14px;padding:12px 14px;cursor:pointer}
+.disc .ic{font-size:16px}.disc .ch{margin-inline-start:auto;font-family:ui-monospace,monospace;font-size:18px;color:var(--ink3)}
+.disc .bd{padding:0 14px 13px;font-size:14px;color:var(--ink2)}
+.disc.v>button{color:var(--vio)}.disc.c>button{color:var(--cyan)}.disc.w>button{color:var(--warn)}
+.tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}
+.tab{background:var(--surf2);border:1px solid var(--line);color:var(--ink2);font-family:ui-monospace,monospace;font-weight:700;font-size:13px;padding:8px 15px;border-radius:9px;cursor:pointer;direction:ltr}
+.tab.act{background:var(--grad);color:#fff;border-color:transparent}
+.svgbox{display:flex;justify-content:center;padding:10px;background:var(--surf2);border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
+.svgbox svg{max-width:100%;height:auto}
+.cap{font-size:13px;color:var(--ink3);margin-bottom:14px}
+.quiz{background:var(--surf);border:1px solid var(--line);border-radius:13px;padding:16px;margin:14px 0}
+.quiz .qi{font-size:11px;font-weight:800;color:var(--cyan);text-transform:uppercase;letter-spacing:.05em}
+.quiz .q{font-size:15px;font-weight:600;margin:6px 0 12px}
+.qopt{display:block;width:100%;text-align:start;background:var(--surf2);border:1.5px solid var(--line);color:var(--ink);font:inherit;font-size:14px;padding:11px 14px;border-radius:10px;margin-bottom:8px;cursor:pointer;transition:.15s}
+.qopt:hover:not(:disabled){border-color:var(--vio)}
+.qopt:disabled{cursor:default;opacity:.92}
+.qopt.ok{background:rgba(26,167,90,.16);border-color:var(--ok);color:var(--ink);font-weight:700}
+.qopt.no{background:rgba(232,69,107,.13);border-color:var(--bad)}
+.qfb{font-size:13.5px;padding:11px 13px;border-radius:9px;margin-top:4px}
+.qfb.ok{background:rgba(26,167,90,.13);color:var(--ink);border:1px solid var(--ok)}
+.qfb.no{background:rgba(232,69,107,.1);color:var(--ink);border:1px solid var(--bad)}
+.dn{display:inline-flex;align-items:center;gap:8px;background:var(--surf2);border:1.5px solid var(--line);color:var(--ink2);font:inherit;font-weight:600;font-size:14px;padding:9px 16px;border-radius:11px;cursor:pointer;margin-top:6px}
+.dn .ck{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--ink3);display:grid;place-items:center;font-size:12px}
+.dn.is{background:rgba(26,167,90,.13);border-color:var(--ok);color:var(--ok)}.dn.is .ck{background:var(--ok);border-color:var(--ok);color:#fff}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:14px}
+.fc{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--sh)}
+.fc .fno{font-family:ui-monospace,monospace;font-size:11px;color:var(--cyan);font-weight:700}
+.fc h4{font-size:16px;margin:4px 0 10px}
+.fc .frm{font-family:ui-monospace,monospace;font-size:14px;background:var(--surf2);border:1px solid var(--line);border-radius:9px;padding:10px;direction:ltr;text-align:center;color:var(--vio);font-weight:700;margin-bottom:10px}
+.fc ul{list-style:none;font-size:13px;color:var(--ink2);margin-bottom:10px}.fc li{padding:2px 0}
+.fc .ex{font-size:12.5px;color:var(--ink3);background:var(--surf2);border-radius:8px;padding:8px 10px;margin-bottom:12px}.fc .ex b{color:var(--ink2)}
+.fcin{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.fcf{flex:1;min-width:110px;font-size:11px;color:var(--ink3)}
+.fcf input{width:100%;background:var(--surf2);border:1.5px solid var(--line);color:var(--ink);border-radius:8px;padding:8px;font:inherit;direction:ltr;margin-top:3px}
+.fcf input:focus{outline:none;border-color:var(--vio)}
+.fcout{display:flex;justify-content:space-between;align-items:center;background:var(--grad);border-radius:9px;padding:11px 14px;color:#fff}
+.fcout span{font-size:12px;opacity:.9}.fcout b{font-size:20px;font-family:ui-monospace,monospace}
+.flash{max-width:420px;margin:0 auto 14px}
+.fcard{height:200px;cursor:pointer;perspective:1200px}
+.fcard .face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;display:grid;place-items:center;padding:22px;text-align:center;border:1px solid var(--line);box-shadow:var(--sh);transition:transform .5s}
+.fcard .front{background:var(--surf);transform:rotateY(0)}
+.fcard.flip .front{transform:rotateY(180deg)}
+.fcard .back{background:var(--surf2);transform:rotateY(180deg)}
+.fcard.flip .back{transform:rotateY(360deg)}
+.fcard .inner{position:relative;height:100%}
+.face .hint{position:absolute;bottom:14px;left:0;right:0;font-size:11px;color:var(--ink3)}
+.face .term{font-size:17px;padding:6px 14px}.face p{font-size:14.5px;color:var(--ink2)}
+.fnav{display:flex;align-items:center;justify-content:center;gap:16px;font-size:13px;color:var(--ink2)}
+.fnav button{background:var(--surf2);border:1px solid var(--line);color:var(--ink);width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:15px}
+.study{display:flex;flex-direction:column;gap:10px}
+.st{display:flex;gap:13px;background:var(--surf);border:1px solid var(--line);border-inline-start:4px solid var(--vio);border-radius:12px;padding:14px}
+.st .sno{width:30px;height:30px;border-radius:9px;background:var(--grad);color:#fff;display:grid;place-items:center;font-family:ui-monospace,monospace;font-weight:800;flex-shrink:0;font-size:14px}
+.st .sic{font-size:21px}.st h4{font-size:15px;margin-bottom:3px}.st p{font-size:13px;color:var(--ink2)}
+.ckbar{height:11px;background:var(--surf2);border:1px solid var(--line);border-radius:99px;overflow:hidden;position:relative;margin-bottom:14px}
+.ckbar>i{display:block;height:100%;background:var(--grad);width:0;transition:width .4s}
+.ckbar>span{position:absolute;inset:0;display:grid;place-items:center;font-size:10px;font-weight:700;color:var(--ink)}
+.ck{list-style:none}
+.cki{display:flex;align-items:center;gap:12px;background:var(--surf);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:7px;cursor:pointer;font-size:14px;transition:.15s}
+.cki:hover{border-color:var(--vio)}
+.cki .box{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--ink3);display:grid;place-items:center;font-size:13px;flex-shrink:0}
+.cki.on{background:rgba(26,167,90,.08);border-color:var(--ok)}.cki.on .box{background:var(--ok);border-color:var(--ok);color:#fff}.cki.on span:last-child{color:var(--ink3);text-decoration:line-through}
+.rmnote{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ink2);background:var(--surf2);border:1px dashed var(--line);border-radius:11px;padding:10px 14px;margin-bottom:16px}
+.rmnote b{color:var(--cyan);font-family:ui-monospace,monospace}
+.rmroot{display:grid;place-items:center;margin-bottom:4px}.rmroot .term{font-size:14px;padding:8px 18px}
+.rmstem{width:2px;height:20px;background:var(--grad);margin:0 auto 10px}
+.rmcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.rmcol{display:flex;flex-direction:column;gap:6px}
+.rmbr{background:var(--surf);border:1.5px solid var(--vio);color:var(--ink);font-family:ui-monospace,monospace;font-weight:700;font-size:12.5px;padding:9px;border-radius:10px;cursor:pointer;direction:ltr;text-align:center}
+.rmch{background:var(--surf2);border:1px solid var(--line);color:var(--ink2);font-family:ui-monospace,monospace;font-size:11.5px;padding:7px;border-radius:8px;cursor:pointer;direction:ltr;text-align:center;transition:.15s}
+.rmch:hover{border-color:var(--cyan);color:var(--ink)}
+.rmbr.lit{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok) inset}.rmch.lit{border-color:var(--ok);color:var(--ok)}
+.rmpanel{margin-top:6px}
+.rmcard{background:var(--surf);border:1px solid var(--line);border-radius:13px;padding:16px}
+.rmcard .hd{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rmcard .lit{font-size:11px;color:var(--ok);font-weight:700}
+.rmcard p{font-size:14px;color:var(--ink2);margin-bottom:10px}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:25}
+.subh{font-size:15px;margin:16px 0 8px;color:var(--ink);font-weight:700}
+.fitems{display:grid;gap:8px;margin-bottom:14px}
+.fit{display:flex;gap:12px;background:var(--surf);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+.fit .n{width:28px;height:28px;border-radius:8px;background:var(--grad);color:#fff;display:grid;place-items:center;font-family:ui-monospace,monospace;font-weight:800;font-size:13px;flex-shrink:0}
+.fit .t{font-weight:600;font-size:14px;margin-bottom:2px}.fit p{font-size:13px;color:var(--ink2)}
+.pfoot{text-align:center;font-size:12px;color:var(--ink3);padding:24px 0;border-top:1px solid var(--line);margin-top:30px}
+@media(max-width:860px){.side{position:fixed;inset-inline-start:0;top:0;z-index:30;transform:translateX(110%);transition:transform .25s}[dir=rtl] .side{transform:translateX(-110%)}.side.open{transform:translateX(0)}.burger{display:block}.app{display:block}.wrap{display:block}}
+svg text{fill:var(--ink2);font-family:ui-monospace,monospace}
+.nd{fill:var(--surf2);stroke:var(--vio);stroke-width:1.5}.nd.sel{fill:var(--vio);stroke:var(--vio)}.nd.ng{fill:rgba(34,199,224,.25);stroke:var(--cyan)}
+.lk{stroke:var(--line);stroke-width:1.5}.lk.a{stroke:var(--cyan);stroke-width:2.5}
+.ndt{fill:var(--ink);font-size:11px;text-anchor:middle}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="boot"><div><div class="bm">‖‖ PARALLEL</div><div class="bs">يتم بناء الصفحة التفاعلية… (نسخة مستقلة بدون مكتبات خارجية)</div></div></div>
+<div id="errpanel"></div>
+<noscript><div style="max-width:680px;margin:60px auto;padding:24px;text-align:center;color:#e8ecf4;background:#19202f;border-radius:16px">تحتاج هذه الصفحة إلى تفعيل JavaScript.</div></noscript>
+
+<script>
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function showError(t){var b=document.getElementById('boot');if(b)b.style.display='none';var p=document.getElementById('errpanel');if(!p)return;p.style.display='block';p.innerHTML='<div class="errc"><h3>تعذّر تشغيل الصفحة</h3><p>حدث خطأ أثناء التشغيل — التفاصيل بالأسفل:</p><pre dir="ltr">'+escapeHtml(t)+'</pre><button class="btn" onclick="location.reload()">إعادة المحاولة</button></div>';}
+window.onerror=function(m,s,l,c,e){showError((e&&e.stack)?e.stack:(m+' @'+l+':'+c));return false;};
+window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;showError('Rejection: '+((r&&r.stack)?r.stack:r));});
+setTimeout(function(){var r=document.getElementById('root');if(r&&r.children.length===0&&document.getElementById('errpanel').style.display!=='block')showError('لم يُرسم التطبيق ضمن المهلة. قد تكون بيئة المعاينة تمنع تنفيذ JavaScript.');},4000);
+</script>
+
+<script>
+(function(){
+"use strict";
+function h(t,p){var e=document.createElement(t);p=p||{};for(var k in p){if(!Object.prototype.hasOwnProperty.call(p,k))continue;var v=p[k];if(v==null||v===false)continue;if(k==='class')e.className=v;else if(k==='html')e.innerHTML=v;else if(k==='text')e.textContent=v;else if(k.slice(0,2)==='on'&&typeof v==='function')e.addEventListener(k.slice(2).toLowerCase(),v);else if(v===true)e.setAttribute(k,'');else e.setAttribute(k,v);}for(var i=2;i<arguments.length;i++)ap(e,arguments[i]);return e;}
+function ap(e,c){if(c==null||c===false||c==='')return;if(Array.isArray(c)){for(var i=0;i<c.length;i++)ap(e,c[i]);return;}if(typeof c==='string'||typeof c==='number'){e.appendChild(document.createTextNode(String(c)));return;}e.appendChild(c);}
+function clr(e){while(e.firstChild)e.removeChild(e.firstChild);}
+function bin(n,w){var s=(n>>>0).toString(2);while(s.length<w)s='0'+s;return s.slice(-w);}
+function r3(x){return Math.round(x*1000)/1000;}
+function term(t,v){return h('code',{class:'term'+(v?' term--'+v:''),dir:'ltr'},t);}
+
+function shd(no,t,sub,k){return h('div',{class:'shd'},h('div',{class:'no'+(k==='c'?' c':'')},no),h('div',{},h('h2',{},t),h('div',{class:'sub'},sub)));}
+function memo(){return h('div',{class:'memo'},h('b',{},'احفظها هكذا'),h('p',{},Array.prototype.slice.call(arguments)));}
+function lead(){return h('p',{class:'lead'},Array.prototype.slice.call(arguments));}
+function disc(label,tone,ic,kids){var o=false,bd=h('div',{class:'bd',style:'display:none'},kids),ch=h('span',{class:'ch'},'+');return h('div',{class:'disc '+tone},h('button',{onClick:function(){o=!o;bd.style.display=o?'block':'none';ch.textContent=o?'−':'+';}},h('span',{class:'ic'},ic),h('span',{},label),ch),bd);}
+function tools(s,e,x){return h('div',{},disc('اشرح ببساطة','v','🧠',s),disc('أعطني مثال','c','💡',e),disc('سؤال امتحان شائع','w','📝',x));}
+
+function quiz(cfg){var done=false,fb=h('div',{}),opts=h('div',{}),box=h('div',{class:'quiz'},h('div',{class:'qi'},'سؤال'),h('div',{class:'q'},cfg.q),opts,fb);
+cfg.options.forEach(function(o,i){var b=h('button',{class:'qopt',onClick:function(){if(done&&i===cfg.correct)return;if(i===cfg.correct){done=true;Array.prototype.forEach.call(opts.children,function(x){x.disabled=true;x.classList.remove('no');});b.classList.add('ok');clr(fb);fb.className='qfb ok';ap(fb,h('b',{},'إجابة صحيحة! '),cfg.why);if(cfg.onSolved)cfg.onSolved();}else{b.classList.add('no');b.disabled=true;clr(fb);fb.className='qfb no';ap(fb,h('b',{},'ليست صحيحة. '),cfg.hint||'حاول مجدداً.');}}},o);opts.appendChild(b);});return box;}
+
+function dn(id){var on=ST.done[id]===true,ck=h('span',{class:'ck'},on?'✓':''),b=h('button',{class:'dn'+(on?' is':''),'data-sec':id},ck,h('span',{},on?'تمت دراسته':'علّم كمكتمل'));b.addEventListener('click',function(){on=!on;setDone(id,on);b.classList.toggle('is',on);ck.textContent=on?'✓':'';b.lastChild.textContent=on?'تمت دراسته':'علّم كمكتمل';});return b;}
+
+function fc(cfg){var vals={};cfg.fields.forEach(function(f){vals[f.k]=f.def;});var out=h('b',{dir:'ltr'},'—');function calc(){var ok=true,n={};cfg.fields.forEach(function(f){var x=parseFloat(vals[f.k]);n[f.k]=x;if(isNaN(x))ok=false;});if(!ok){out.textContent='—';return;}var rr=cfg.compute(n);out.textContent=(rr!=null&&isFinite(rr))?r3(rr):'—';}var ins=h('div',{class:'fcin'});cfg.fields.forEach(function(f){var i=h('input',{type:'number',dir:'ltr',value:f.def});i.addEventListener('input',function(){vals[f.k]=i.value;calc();});ins.appendChild(h('label',{class:'fcf'},f.label,i));});var card=h('div',{class:'fc'},h('div',{class:'fno'},cfg.no),h('h4',{},cfg.title),h('div',{class:'frm'},cfg.formula),h('ul',{},cfg.vars.map(function(v){return h('li',{},v);})),h('div',{class:'ex'},h('b',{},'مثال: '),cfg.ex),ins,h('div',{class:'fcout'},h('span',{},'الناتج'),out));calc();return card;}
+
+/* small SVGs */
+function meshSVG(){var n=4,g=52,o=26,z=22,W=o*2+(n-1)*g+z,s='<svg viewBox="0 0 '+W+' '+W+'">';function c(i){return o+i*g+z/2;}for(var r=0;r<n;r++)for(var col=0;col<n;col++){if(col<n-1)s+='<line x1="'+c(col)+'" y1="'+c(r)+'" x2="'+c(col+1)+'" y2="'+c(r)+'" class="lk"/>';if(r<n-1)s+='<line x1="'+c(col)+'" y1="'+c(r)+'" x2="'+c(col)+'" y2="'+c(r+1)+'" class="lk"/>';}for(var r2=0;r2<n;r2++)for(var c2=0;c2<n;c2++)s+='<rect x="'+(o+c2*g)+'" y="'+(o+r2*g)+'" width="'+z+'" height="'+z+'" rx="6" class="nd"/>';return s+'</svg>';}
+function hcView(){var pos={0:[55,55],1:[55,175],2:[175,55],3:[175,175],4:[110,100],5:[110,220],6:[230,100],7:[230,220]},ed=[],sel=null;for(var a=0;a<8;a++)for(var b=a+1;b<8;b++){var d=a^b;if(d&&((d&(d-1))===0))ed.push([a,b]);}var box=h('div',{class:'svgbox'});function draw(){var ng={};if(sel!=null)[0,1,2].forEach(function(k){ng[sel^(1<<k)]=true;});var s='<svg viewBox="0 0 290 280">';ed.forEach(function(e){var ac=sel!=null&&(e[0]===sel||e[1]===sel);s+='<line x1="'+pos[e[0]][0]+'" y1="'+pos[e[0]][1]+'" x2="'+pos[e[1]][0]+'" y2="'+pos[e[1]][1]+'" class="lk'+(ac?' a':'')+'"/>';});Object.keys(pos).forEach(function(k){var id=+k,p=pos[k],cl=(id===sel)?' sel':(ng[id]?' ng':'');s+='<g data-id="'+id+'" style="cursor:pointer"><circle cx="'+p[0]+'" cy="'+p[1]+'" r="17" class="nd'+cl+'"/><text x="'+p[0]+'" y="'+(p[1]+4)+'" class="ndt">'+bin(id,3)+'</text></g>';});box.innerHTML=s+'</svg>';}box.addEventListener('click',function(e){var g=e.target.closest('g[data-id]');if(g){sel=+g.getAttribute('data-id');draw();}});draw();return box;}
+
+/* ROADMAP */
+var TREE={root:'Parallel Processing',br:[
+{l:'Motivation',sec:'motivation',i:'سرعة حسابية أكبر + سعر/أداء أفضل؛ وحد سرعة الضوء يمنع معالجاً واحداً من تلبية التطبيقات الضخمة.',ch:[{l:'Faster Compute',i:'تطبيقات تحتاج 10¹³–10¹⁵ عملية/ثانية.'},{l:'Price/Perf',i:'حواسيب متوازية أرخص للأداء المتوسط.'}]},
+{l:'1-CPU Limits',sec:'problems',i:'إمّا معالج أسرع (محدود بسرعة الضوء) أو إضافة معالجات تعمل بالتوازي.',ch:[{l:'Faster CPU',i:'محدود فيزيائياً.'},{l:'More CPUs',i:'الاتجاه العملي.'}]},
+{l:'Flynn',sec:'classifications',i:'تصنيف حسب عدد تدفّقات التعليمات والبيانات.',ch:[{l:'SISD',i:'تعليمة·بيانات واحدة — تسلسلي.'},{l:'MISD',i:'نظري فقط.'},{l:'SIMD',i:'تعليمة تُبَثّ·بيانات متعددة.'},{l:'MIMD',i:'الأقوى — استقلال تام.'}]},
+{l:'Facilitating',sec:'facilitating',i:'تقنيات معمارية تُمكّن التوازي.',ch:[{l:'Pipelining',i:'خط أنابيب يزيل الخمول.'},{l:'Cache',i:'ذاكرة صغيرة سريعة.'},{l:'I/O Proc',i:'معالجات للإدخال/الإخراج.'},{l:'Multiproc',i:'عدة معالجات فعلية.'}]},
+{l:'Topologies',sec:'topologies',i:'طرق ربط المعالجات.',ch:[{l:'Mesh',i:'شبكة جيران + Wrap.'},{l:'Pyramid',i:'APEX/Base/Levels.'},{l:'P-Shuffle',i:'إزاحة دائرية للبتات.'},{l:'Hypercube',i:'اختلاف بِت واحد.'}]},
+{l:'Evaluation',sec:'evaluation',i:'مقاييس تقييم الخوارزميات المتوازية.',ch:[{l:'Speed-up',i:'تسلسلي ÷ متوازٍ.'},{l:'Cost',i:'متوازٍ × عدد المعالجات.'},{l:'Efficiency',i:'SP/P و تسلسلي/Cost.'}]},
+{l:'Bitonic Sort',sec:'bitonic',i:'فرز بمقارنات تختلف ببت واحد — يناسب Hypercube.',ch:[{l:'Hypercube',i:'n معالج، m(m+1)/2 خطوة.'},{l:'P-Shuffle',i:'n/2 معالج + MASK.'}]}
+]};
+function secRoadmap(){var panel=h('div',{class:'rmpanel'}),nodes=[];
+function detail(nd){clr(panel);var lit=nd.sec&&ST.done[nd.sec]===true;panel.appendChild(h('div',{class:'rmcard'},h('div',{class:'hd'},term(nd.l,'c'),lit?h('span',{class:'lit'},'تمت دراسته ✓'):null),h('p',{},nd.i),nd.sec?h('button',{class:'btn btn--sm',onClick:function(){go(nd.sec);}},'اذهب إلى الشرح ←'):null));}
+var cols=h('div',{class:'rmcols'});TREE.br.forEach(function(b){var col=h('div',{class:'rmcol'}),br=h('button',{class:'rmbr'+(ST.done[b.sec]?' lit':''),onClick:function(){detail(b);}},b.l);nodes.push({el:br,sec:b.sec});col.appendChild(br);b.ch.forEach(function(c){var ch=h('button',{class:'rmch'+(ST.done[b.sec]?' lit':''),onClick:function(){detail({l:c.l,i:c.i,sec:b.sec});}},c.l);nodes.push({el:ch,sec:b.sec});col.appendChild(ch);});cols.appendChild(col);});
+secRoadmap.refresh=function(){nodes.forEach(function(o){o.el.classList.toggle('lit',ST.done[o.sec]===true);});};
+detail(TREE.br[0]);
+return h('div',{},shd('00','خريطة الفصل التفاعلية','Chapter Roadmap','v'),lead('اضغط أي عقدة لقراءة فكرتها والانتقال لقسمها. العُقد تُضيء ✓ كلما أنجزت قسماً.'),h('div',{class:'rmnote'},'🗺️ خريطة بالمحرّك المدمج — ',h('b',{},'React Flow'),' غير متوفّر في بيئة المعاينة، فتُستخدم الخريطة البديلة القابلة للنقر.'),h('div',{class:'rmroot'},term(TREE.root,'v')),h('div',{class:'rmstem'}),cols,panel);}
+
+/* CONTENT */
+function secMot(){return h('div',{},shd('01','الدافع للمعالجة المتوازية','Motivation','v'),
+lead('لماذا ',term('Parallel Processing'),'؟ لسببين: سرعة حسابية أكبر، وسعر/أداء أفضل.'),
+h('div',{class:'trio'},h('div',{class:'c'},h('h4',{},'⚡ سرعة'),h('p',{},'الأقمار الصناعية (10¹⁰ بت/ث ⇐ ~10¹³ عملية/ث) والجراحة الافتراضية (~10¹⁵) يستحيل تلبيتها بمعالج واحد.')),h('div',{class:'c'},h('h4',{},'💰 سعر/أداء'),h('p',{},'حاسوب متوازٍ من معالجات بسيطة أرخص من معالج خارق واحد.')),h('div',{class:'c'},h('h4',{},'🚧 حدّ فيزيائي'),h('p',{},'سرعة الضوء 3×10⁸ م/ث تحدّ تسريع المعالج الواحد.'))),
+h('div',{class:'soft'},h('p',{},'الفكرة: نكسر المشكلة الكبيرة إلى أجزاء تُحَلّ ',h('b',{},'في نفس اللحظة'),' على معالجات متعددة، ثم نجمع النتائج.')),
+tools([h('p',{},'تخيّل عدّ أوراق كتاب ضخم: شخص واحد يبطئ، لكن 10 أشخاص يوزّعون الفصول وينتهون أسرع. هذا التوازي.')],[h('p',{},'قمر يرسل 10¹⁰ بت/ث ويحتاج ~10¹³ عملية/ث — يفوق أسرع معالج تسلسلي.')],[h('p',{},'س: اذكر سببين للمعالجة المتوازية. ج: سرعة أكبر + سعر/أداء أفضل، مع حدّ سرعة الضوء.')]),
+quiz({q:'ما الحدّ الفيزيائي الذي يمنع تسريع معالج واحد بلا نهاية؟',options:['حجم الذاكرة','سرعة الضوء','عدد البكسلات','حجم القرص'],correct:1,why:'سرعة الضوء 3×10⁸ م/ث تحدّ تصغير المكوّنات وتسريع الإشارات.',hint:'تذكّر 3×10⁸ م/ث.',onSolved:function(){mq('motivation');}}),dn('motivation'));}
+
+function secProb(){return h('div',{},shd('02','حدود المعالج الواحد','Single-Processor Limits','c'),
+lead('كلما كبرت التطبيقات احتجنا قدرة أكبر. أمامنا خياران:'),
+h('div',{class:'grid2'},h('div',{class:'soft'},h('h4',{},'1) معالج أسرع'),h('p',{},'محدود بسرعة الضوء وتعقيد التصنيع، ولا يلاحق نموّ التطبيقات.')),h('div',{class:'soft'},h('h4',{},'2) معالجات متعددة'),h('p',{},'نضيف معالجات تعمل بالتوازي — الاتجاه العملي وأساس هذا الفصل.'))),
+memo(term('degree of parallelism'),' = عدد العمليات المنفّذة في نفس اللحظة. كلما زادت زادت السرعة (والكلفة).'),
+quiz({q:'أيّ خيار هو الاتجاه العملي لمواكبة التطبيقات الضخمة؟',options:['معالج واحد أسرع بلا حدود','إضافة معالجات متعددة متوازية'],correct:1,why:'تسريع معالج واحد محدود فيزيائياً، أما إضافة المعالجات فقابلة للتوسّع.',hint:'فكّر بالحدّ الفيزيائي.',onSolved:function(){mq('problems');}}),dn('problems'));}
+
+function secClass(){var data={SISD:'تعليمة واحدة على بيانات واحدة — بنية الحواسيب التسلسلية (Sequential).',MISD:'عدة تعليمات على نفس البيانة — نظري فقط، لا يُستخدم عملياً.',SIMD:'تعليمة واحدة (Instruction Stream واحد) تُبَثّ لكل المعالجات، كلٌّ ينفّذها على بياناته؛ لكل معالج ذاكرته.',MIMD:'عدة تعليمات وعدة بيانات؛ كل معالج مستقل ببرنامجه وبياناته بتزامن — الأقوى.'};var cur='SISD',tabs=h('div',{class:'tabs'}),info=h('div',{class:'soft'},h('p',{},data[cur]));['SISD','MISD','SIMD','MIMD'].forEach(function(x){var b=h('button',{class:'tab'+(x===cur?' act':''),onClick:function(){cur=x;clr(info);ap(info,h('p',{},data[x]));Array.prototype.forEach.call(tabs.children,function(t){t.classList.remove('act');});b.classList.add('act');}},x);tabs.appendChild(b);});
+return h('div',{},shd('03','تصنيفات Flynn','Flynn’s Classification','v'),
+lead('يصنّف Flynn الحواسيب حسب عدد ',term('Instruction Streams'),' و',term('Data Streams','c'),'. الحرف الأول = Instruction، الثالث = Data.'),
+tabs,info,
+memo(term('MISD'),' نظري فقط · ',term('MIMD'),' الأقوى (كل معالج مستقل) · ',term('SIMD'),' تعليمة واحدة تُبَثّ للجميع.'),
+quiz({q:'أيّ تصنيف: تعليمة واحدة تُبَثّ لعدة معالجات يعمل كلٌّ على بياناته؟',options:['SISD','MISD','SIMD','MIMD'],correct:2,why:'SIMD = Single Instruction, Multiple Data.',hint:'S أول = Single instruction، M ثالث = Multiple data.',onSolved:function(){mq('classifications');}}),
+quiz({q:'أيّ تصنيف نظري فقط؟',options:['SIMD','MISD','MIMD'],correct:1,why:'MISD لا تطبيق عملي له.',hint:'النموذج بلا معنى عملي.'}),dn('classifications'));}
+
+function secFac(){var it=[['Pipelining','خط أنابيب: مراحل متتابعة تعمل معاً كخط إنتاج فيختفي الخمول (idle).'],['Cache Memory','ذاكرة صغيرة وسريعة جداً تخزّن ما يُحتمل أن يحتاجه المعالج قريباً.'],['I/O Processor','معالجات/قنوات مخصّصة للإدخال والإخراج تُحرّر الـ CPU من الانتظار.'],['Bit-Parallel Memory','وصول متوازٍ لكل بتات الكلمة دفعة واحدة (بدأ مع CRT).'],['Functional Units','وحدات وظيفية متعددة تنفّذ أكثر من تعليمة معاً.'],['Multiprogramming','عدة برامج بالذاكرة؛ يبدّل الـ CPU عند توقّف برنامج لـ I/O.'],['Timesharing','نوع من Multiprogramming يمنح كل عملية شريحة زمنية.'],['Multiprocessing','عدة معالجات فعلية لتحقيق التوازي الحقيقي.']];
+return h('div',{},shd('04','تسهيل التوازي','Facilitating Parallelism','c'),lead('تقنيات معمارية تحسّن الأداء وتُمكّن التوازي:'),
+h('div',{class:'fitems'},it.map(function(x,i){return h('div',{class:'fit'},h('div',{class:'n'},i+1),h('div',{},h('div',{class:'t'},term(x[0]),''),h('p',{},x[1])));})),
+memo('الفرق: ',term('Multiprogramming'),' يبدّل عند I/O · ',term('Timesharing'),' عند انتهاء الشريحة الزمنية · ',term('Multiprocessing'),' معالجات تعمل فعلاً معاً.'),
+quiz({q:'ما الفائدة الأساسية من الـ Pipelining؟',options:['زيادة الذاكرة','إزالة خمول المعالج بجعل المراحل تعمل معاً','تقليل المعالجات','تشفير البيانات'],correct:1,why:'كل مرحلة تبقى مشغولة كخط إنتاج، فيختفي الخمول.',hint:'فكّر بخط الإنتاج.',onSolved:function(){mq('facilitating');}}),dn('facilitating'));}
+
+function secTopo(){return h('div',{},shd('05','طوبولوجيا الربط','Topologies','v'),lead('كيف نربط المعالجات؟ لكل طوبولوجيا شكل وخصائص:'),
+h('div',{class:'subh'},'Mesh Topology'),h('div',{class:'svgbox',html:meshSVG()}),h('div',{class:'cap'},'كل معالج متصل بجيرانه (يمين/يسار/أعلى/أسفل). ',h('span',{},'Wrap Around'),' يربط أطراف كل صف وعمود. عدد الروابط ≈ 2N.'),
+memo('في الـ ',term('Pyramid'),': APEX = القمة، Base = أدنى مستوى، وكل معالج داخلي متصل بـ 9 (أب + 4 جيران + 4 أبناء). عدد المعالجات = 4/3·P − 1/3 (P=16 ← 21، والـ APEX في Level 2 لأن log₄16=2).'),
+h('div',{class:'subh'},'Hypercube — اضغط أي عقدة'),hcView(),h('div',{class:'cap'},'نرتّب ',h('span',{},'n = 2ᵏ'),' معالج في k أبعاد؛ أي متجاورين يختلفان في بِت واحد فقط.'),
+memo(term('Perfect Shuffle'),' = ربط بإزاحة دائرية لليسار للتمثيل الثنائي (011 ← 110)، ويحتاج عدد معالجات = قوة للعدد 2 · ',term('Shuffle-Exchange'),' = نفسه + رابط تبادل بين كل معالج زوجي وتاليه (يختلفان في الـ LSB) · ',term('CCC'),' = كل عقدة حلقة من k معالجات ← k·2ᵏ.'),
+quiz({q:'في الـ Hypercube، متى يكون معالجان متجاورين؟',options:['إذا تساوى رقماهما','إذا اختلف رقماهما في بِت واحد فقط','إذا اختلفا في كل البتات','إذا كان أحدهما زوجياً'],correct:1,why:'المتجاوران يختلفان في بِت واحد بالضبط (010 و 011).',hint:'XOR = قوة للعدد 2.',onSolved:function(){mq('topologies');}}),
+quiz({q:'بالـ Perfect Shuffle، إلى أين يتصل 011 (إزاحة دائرية لليسار)؟',options:['001','110','111','010'],correct:1,why:'الإزاحة الدائرية لليسار لـ 011 تعطي 110.',hint:'انقل البت الأيسر إلى اليمين.'}),dn('topologies'));}
+
+function secEval(){return h('div',{},shd('06','التقييم والصيغ','Evaluation & Formulas','c'),lead('كيف نقيس جودة خوارزمية متوازية؟ جرّب الحاسبات:'),
+h('div',{class:'fgrid'},
+fc({no:'صيغة 1',title:'Speed-up (SP)',formula:'SP = T_seq / T_par',vars:[h('span',{},term('T_seq'),' = أسرع زمن تسلسلي'),h('span',{},term('T_par'),' = الزمن المتوازي')],ex:'T_seq=90 و T_par=15 ← 90/15 = 6.',fields:[{k:'a',label:'T sequential',def:'90'},{k:'b',label:'T parallel',def:'15'}],compute:function(n){return n.a/n.b;}}),
+fc({no:'صيغة 2',title:'Processor Efficiency (EP)',formula:'EP = SP / P',vars:[h('span',{},term('SP'),' = الـ Speed-up'),h('span',{},term('P'),' = عدد المعالجات')],ex:'SP=6 و P=8 ← 6/8 = 0.75.',fields:[{k:'a',label:'SP',def:'6'},{k:'b',label:'P',def:'8'}],compute:function(n){return n.a/n.b;}}),
+fc({no:'صيغة 3',title:'Cost',formula:'Cost = T_par × P',vars:[h('span',{},term('T_par'),' = الزمن المتوازي'),h('span',{},term('P'),' = عدد المعالجات')],ex:'T_par=15 و P=8 ← 120.',fields:[{k:'a',label:'T parallel',def:'15'},{k:'b',label:'P',def:'8'}],compute:function(n){return n.a*n.b;}}),
+fc({no:'صيغة 4',title:'Overall Efficiency',formula:'E = T_seq / Cost',vars:[h('span',{},term('T_seq'),' = أسرع زمن تسلسلي'),h('span',{},term('Cost'),' = الكلفة')],ex:'T_seq=90 و Cost=120 ← 0.75.',fields:[{k:'a',label:'T sequential',def:'90'},{k:'b',label:'Cost',def:'120'}],compute:function(n){return n.a/n.b;}})),
+memo('أي خوارزمية متوازية يمكن دائماً تشغيلها تسلسلياً. كلما زاد عدد المعالجات زادت الكلفة، فنوازن بين السرعة والكفاءة.'),
+quiz({q:'إذا كان الزمن التسلسلي 90 والمتوازي 15، فما الـ Speed-up؟',options:['6','15','75','1350'],correct:0,why:'SP = 90/15 = 6.',hint:'اقسم التسلسلي على المتوازي.',onSolved:function(){mq('evaluation');}}),dn('evaluation'));}
+
+function secBit(){return h('div',{},shd('07','الفرز ثنائي النغمة','Bitonic Sort','v'),
+lead('الـ ',term('Bitonic Sort'),' يدمج متتاليات Bitonic ويقارن دائماً عناصر تختلف فهارسها ببِت واحد — لذا يناسب الـ ',term('Hypercube'),'.'),
+h('div',{class:'soft'},h('p',{},'لفرز ',h('b',{},'n = 2ᵐ'),' عنصر: نستخدم n معالج في Hypercube بُعده m، وعدد الخطوات = ',h('b',{},'m(m+1)/2'),'. لـ n=8 ← m=3 ← 6 خطوات (الأصغر في P0، الأكبر في P7).')),
+tools([h('p',{},'نرتّب الأرقام عبر «جولات» من المقارنات المتوازية؛ في كل جولة نقارن أزواجاً ونبدّلها لو لزم حتى تُرتَّب القائمة.')],[h('p',{},'{10,7,12,4,6,9,2,15}: n=8 ← m=3 ← 6 خطوات.')],[h('p',{},'س: كم خطوة لفرز 16 عنصراً؟ ج: m=4 ← m(m+1)/2 = 10.')]),
+memo('في نموذج ',term('Perfect Shuffle'),' نستخدم ',term('n/2'),' معالج فقط، كلٌّ يخزّن قيمتين ويرتّبهما حسب ',term('MASK'),' (0 تصاعدي، 1 تنازلي) عبر shuffle و exchange، مكرَّرة log₂n مرة.'),
+quiz({q:'كم خطوة يحتاج Bitonic Sort لفرز n=8 على Hypercube؟',options:['3','6','8','16'],correct:1,why:'m=log₂8=3، والخطوات m(m+1)/2 = 6.',hint:'احسب m ثم m(m+1)/2.',onSolved:function(){mq('bitonic');}}),dn('bitonic'));}
+
+/* flashcards */
+var FL=[['SISD','تعليمة واحدة على بيانات واحدة — حواسيب تسلسلية.'],['MISD','عدة تعليمات على بيانة واحدة — نظري فقط.'],['SIMD','تعليمة تُبَثّ لعدة معالجات، كلٌّ على بياناته.'],['MIMD','عدة تعليمات وبيانات — كل معالج مستقل.'],['Pipelining','مراحل متتابعة تعمل معاً فيختفي الخمول.'],['Cache Memory','ذاكرة صغيرة سريعة جداً.'],['I/O Processor','معالج مخصّص للإدخال/الإخراج.'],['Multiprogramming','عدة برامج بالذاكرة؛ تبديل عند I/O.'],['Timesharing','شرائح زمنية لكل عملية.'],['Multiprocessing','عدة معالجات فعلية.'],['Mesh Topology','شبكة جيران؛ Wrap يربط الأطراف؛ ≈2N رابط.'],['Pyramid Topology','APEX/Base/Levels؛ داخلي متصل بـ 9.'],['Perfect Shuffle','إزاحة دائرية للبتات؛ معالجات = قوة 2.'],['Hypercube','n=2ᵏ؛ المتجاوران يختلفان ببت واحد.'],['Speed-up','تسلسلي ÷ متوازٍ.'],['Cost','متوازٍ × عدد المعالجات.'],['Efficiency','SP/P و تسلسلي/Cost.'],['Bitonic Sort','مقارنة ببت واحد؛ مثالي للـ Hypercube.']];
+function secFlash(){var i=0,flip=false,front=h('div',{class:'face front'}),back=h('div',{class:'face back'}),card=h('div',{class:'fcard',onClick:function(){flip=!flip;card.classList.toggle('flip',flip);}},h('div',{class:'inner'},front,back)),ctr=h('span',{},'1 / '+FL.length);
+function rnd(){clr(front);ap(front,term(FL[i][0],'v'),h('span',{class:'hint'},'اضغط للقلب'));clr(back);ap(back,h('p',{},FL[i][1]),h('span',{class:'hint'},'اضغط للعودة'));ctr.textContent=(i+1)+' / '+FL.length;}
+function gp(d){flip=false;card.classList.remove('flip');i=(i+d+FL.length)%FL.length;rnd();}rnd();
+return h('div',{},shd('08','البطاقات التعليمية','Flashcards','v'),lead('راجع المصطلحات. اضغط البطاقة لقلبها واستخدم الأسهم للتنقّل.'),h('div',{class:'flash'},card),h('div',{class:'fnav'},h('button',{onClick:function(){gp(-1);}},'◀'),ctr,h('button',{onClick:function(){gp(1);}},'▶')));}
+
+/* study */
+var SP=[['افهم الدافع','سرعة الضوء تحدّ المعالج الواحد، فنكسر المشكلة لأجزاء متوازية.','🎯'],['احفظ Flynn','الحرف الأول Instruction والثالث Data؛ MISD نظري، MIMD الأقوى.','🧩'],['قارن أنماط التشغيل','Multiprogramming/Timesharing/Multiprocessing.','🔀'],['ارسم الطوبولوجيا','Mesh و Pyramid و Perfect Shuffle و Hypercube بيدك.','✏️'],['تدرّب على الصيغ','SP ثم Cost ثم Efficiency — بأمثلة رقمية.','🧮'],['افهم Bitonic','الفكرة + المقارنة ببت + m(m+1)/2 خطوة.','📊']];
+function secStudy(){return h('div',{},shd('09','خطة الدراسة','Study Plan','v'),lead('اتبع الخطوات بالترتيب — كل خطوة تبني على ما قبلها:'),h('div',{class:'study'},SP.map(function(s,i){return h('div',{class:'st'},h('div',{class:'sno'},i+1),h('div',{class:'sic'},s[2]),h('div',{},h('h4',{},s[0]),h('p',{},s[1])));})));}
+
+/* checklist */
+var CK=['أعرف الدافعين وحدّ سرعة الضوء','أفرّق Hardware/Software parallelism و degree of parallelism','أحفظ SISD/MISD/SIMD/MIMD وأرسم كلاً منها','أعرف Cache و I/O processors و Functional units','أشرح Pipelining ولماذا يزيل الخمول','أفرّق Multiprogramming/Timesharing/Multiprocessing','أرسم Mesh (مع/بدون Wrap) وأعرف 2N','أعرف Pyramid: APEX/Base وصيغة 4/3·P − 1/3','أحسب Perfect Shuffle وأعرف Shuffle-Exchange','أعرف Hypercube (بت واحد) و CCC (k·2ᵏ)','أحسب Speed-up و Efficiency و Cost','أربط Bitonic بالـ Hypercube وأعرف m(m+1)/2'];
+function secCheck(){var fill=h('i',{}),txt=h('span',{}),doneSlot=h('div',{}),list=h('ul',{class:'ck'});
+function ref(){var p=Math.round((cChecks()/CK.length)*100);fill.style.width=p+'%';txt.textContent=p+'% جاهز';clr(doneSlot);if(p===100)doneSlot.appendChild(h('div',{class:'banner'},'🎉 ممتاز! أتممت كل بنود المراجعة — أنت جاهز للامتحان.'));}
+CK.forEach(function(c,i){var on=ST.chk[i]===true,box=h('span',{class:'box'},on?'✓':''),li=h('li',{class:'cki'+(on?' on':'')},box,h('span',{},c));li.addEventListener('click',function(){on=!on;ST.chk[i]=on;li.classList.toggle('on',on);box.textContent=on?'✓':'';ref();});list.appendChild(li);});ref();
+return h('div',{},shd('10','قائمة المراجعة النهائية','Final Revision Checklist','c'),lead('قبل الامتحان تأكّد أنك تستطيع فعل كل بند:'),h('div',{class:'ckbar'},fill,txt),list,doneSlot);}
+
+/* ---- shell + state ---- */
+var SEC=[{id:'roadmap',l:'الخريطة',ic:'🗺️',core:false,b:secRoadmap},{id:'motivation',l:'الدافع',ic:'🚀',core:true,b:secMot},{id:'problems',l:'حدود المعالج',ic:'⚙️',core:true,b:secProb},{id:'classifications',l:'تصنيفات Flynn',ic:'🧩',core:true,b:secClass},{id:'facilitating',l:'تسهيل التوازي',ic:'🔧',core:true,b:secFac},{id:'topologies',l:'الطوبولوجيا',ic:'🕸️',core:true,b:secTopo},{id:'evaluation',l:'التقييم والصيغ',ic:'🧮',core:true,b:secEval},{id:'bitonic',l:'Bitonic Sort',ic:'📊',core:true,b:secBit},{id:'flashcards',l:'البطاقات',ic:'🃏',core:false,b:secFlash},{id:'study',l:'خطة الدراسة',ic:'📚',core:false,b:secStudy},{id:'checklist',l:'المراجعة',ic:'✅',core:false,b:secCheck}];
+var CORE=SEC.filter(function(s){return s.core;}).map(function(s){return s.id;});
+var ST={theme:'dark',active:'roadmap',done:{},chk:{},nav:false},R={};
+function cCore(){var n=0;CORE.forEach(function(i){if(ST.done[i])n++;});return n;}
+function cChecks(){var n=0;for(var k in ST.chk)if(ST.chk[k])n++;return n;}
+function pct(){return Math.round((cCore()/CORE.length)*100);}
+function setDone(id,on){ST.done[id]=on;after();}
+function mq(id){if(!ST.done[id]){ST.done[id]=true;after();var b=document.querySelector('.dn[data-sec="'+id+'"]');if(b&&!b.classList.contains('is')){b.classList.add('is');b.firstChild.textContent='✓';b.lastChild.textContent='تمت دراسته';}}}
+function after(){var p=pct();if(R.pf)R.pf.style.width=p+'%';if(R.pp)R.pp.textContent=p+'%';if(R.pc)R.pc.textContent=cCore()+'/'+CORE.length;if(R.tf)R.tf.style.width=p+'%';SEC.forEach(function(s){var n=R.nav[s.id];if(!n)return;var d=ST.done[s.id]===true;n.classList.toggle('done',d);if(s.core){var dt=n.querySelector('.dot');if(dt)dt.textContent=d?'✓':'';}});clr(R.ban);if(p===100)R.ban.appendChild(h('div',{class:'banner'},'🎉 أكملت كل الأقسام الأساسية! انتقل إلى ',h('button',{onClick:function(){go('checklist');}},'المراجعة النهائية'),'.'));if(ST.active==='roadmap'&&secRoadmap.refresh)secRoadmap.refresh();}
+function renderMain(){var s=SEC.filter(function(x){return x.id===ST.active;})[0]||SEC[0];clr(R.inner);R.inner.appendChild(s.b());if(R.main)R.main.scrollTop=0;}
+function go(id){ST.active=id;SEC.forEach(function(s){var n=R.nav[s.id];if(n)n.classList.toggle('act',s.id===id);});var f=SEC.filter(function(s){return s.id===id;})[0];if(R.crumb)R.crumb.textContent=f?f.l:'';R.side.classList.remove('open');if(R.scrim){R.scrim.remove();R.scrim=null;}renderMain();}
+function tnav(){ST.nav=!ST.nav;R.side.classList.toggle('open',ST.nav);if(ST.nav){if(!R.scrim){R.scrim=h('div',{class:'scrim',onClick:tnav});document.body.appendChild(R.scrim);}}else if(R.scrim){R.scrim.remove();R.scrim=null;}}
+function shell(){var root=document.getElementById('root');clr(root);
+R.pf=h('i',{style:'width:'+pct()+'%'});R.pp=h('div',{class:'progpct'},pct()+'%');R.pc=h('span',{},cCore()+'/'+CORE.length);R.nav={};var nv=h('nav',{class:'nav'});
+SEC.forEach(function(s){var d=ST.done[s.id]===true,b=h('button',{class:'navi'+(s.id===ST.active?' act':'')+(d?' done':''),onClick:function(){go(s.id);}},h('span',{class:'ic'},s.ic),h('span',{class:'lb'},s.l),s.core?h('span',{class:'dot'},d?'✓':''):null);R.nav[s.id]=b;nv.appendChild(b);});
+R.side=h('aside',{class:'side'},h('div',{class:'brand'},h('div',{class:'logo'},'‖‖'),h('div',{},h('b',{},'Parallel Processing'),h('span',{},'الفصل السابع · تعلّم تفاعلي'))),h('div',{},h('div',{class:'proghead'},h('span',{},'التقدّم'),R.pc),h('div',{class:'prog'},R.pf),R.pp),nv,h('div',{class:'sfoot'},'نسخة مستقلة بالكامل — بدون CDN أو خطوط خارجية'));
+R.tf=h('i',{style:'width:'+pct()+'%'});R.crumb=h('div',{class:'crumb'},(SEC.filter(function(s){return s.id===ST.active;})[0]||{}).l||'');
+var tb=h('button',{class:'theme',onClick:function(){ST.theme=(ST.theme==='dark'?'light':'dark');document.documentElement.setAttribute('data-theme',ST.theme);tb.textContent=ST.theme==='dark'?'☀️':'🌙';}},ST.theme==='dark'?'☀️':'🌙');
+var top=h('header',{class:'top'},h('button',{class:'burger',onClick:tnav},'☰'),h('div',{},h('h1',{},'Chapter 7: Parallel Processing'),R.crumb),h('div',{class:'right'},h('div',{class:'minip'},h('div',{class:'prog'},R.tf)),tb));
+R.ban=h('div',{});R.inner=h('div',{});R.main=h('main',{class:'main'},R.inner,h('div',{class:'pfoot'},'الشرح بالعربية · المصطلحات بالإنجليزية — Parallel Processing'));
+root.appendChild(h('div',{class:'app'},R.side,h('div',{class:'wrap'},top,h('div',{style:'padding:0 22px'},R.ban),R.main)));}
+function init(){document.documentElement.setAttribute('data-theme',ST.theme);shell();renderMain();after();var b=document.getElementById('boot');if(b)b.style.display='none';}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){try{init();}catch(e){showError(e.stack||(''+e));}});else{try{init();}catch(e){showError(e.stack||(''+e));}}
+})();
+</script>
+</body>
+</html>
